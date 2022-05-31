@@ -1,3 +1,4 @@
+from pyexpat import model
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -29,3 +30,11 @@ class Comments(models.Model):
 
     def __str__(self) -> str:
         return '%s - %s' %(self.post.title,self.name)
+
+
+class AccessToken(models.Model):
+    token_id=models.CharField(max_length=300)
+    user=models.ForeignKey(User, on_delete= models.CASCADE)
+    
+    def __str__(self)-> str:
+        return self.token_id

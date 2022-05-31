@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'API',
     'graphene_django',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
+    'graphql_auth',
 ]
 
 MIDDLEWARE = [
@@ -49,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
 ]
 
 ROOT_URLCONF = 'Blog_API_Revised.urls'
@@ -140,7 +143,10 @@ GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
     "JWT_EXPIRATION_DELTA": timedelta(minutes=50),
     "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7),
+    "JWT_ALLOW_ANY_CLASSES": [
 
+        "graphql_auth.mutations.ObtainJSONWebToken",
+    ],
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
 }
