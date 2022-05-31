@@ -1,4 +1,3 @@
-from logging import info
 from .models import Post,Comments,AccessToken
 from django.contrib.auth import get_user_model,authenticate
 import graphene
@@ -6,19 +5,18 @@ from graphene_django import DjangoObjectType
 import graphql_jwt
 from graphql_jwt.shortcuts import get_token
 
+
+#Auth Decorator
 def authenticate_role(func):
     def wrap(self,info,**kwargs):
-        print("197!@@@@@@@@@")
-        print(info,"@@@@@@@@@@@@@")
         auth_header = info.context.META.get('HTTP_AUTHORIZATION')
-        print(auth_header,"@@@@@")
         if auth_header is None:
             raise Exception('auth Token not providedd')
         else:
             new_token=auth_header.replace("JWT","").replace(" ","")
             if AccessToken.objects.filter(token_id=new_token).exists():
                 return func(self,info,**kwargs)
-            raise Exception('Please Login Again your logged out!!!!')
+            raise Exception("Please Login Again you'r logged out!!!!")
     return wrap
 
 
@@ -86,6 +84,7 @@ class CreatePost(graphene.Mutation):
         post_data=PostInput(required=True)
 
     post=graphene.Field(PostType)
+    msg=graphene.String()
     @authenticate_role
     def mutate(root, info, post_data=None):
         post=Post(title=post_data.title,
@@ -95,7 +94,8 @@ class CreatePost(graphene.Mutation):
         author=get_user_model().objects.get(id=post_data.author)
         )
         post.save()
-        return CreatePost(post=post)
+        msg=" Blog Created Succefully"
+        return CreatePost(post=post,msg=msg)
 
 
 class storeToken(graphene.Mutation):
@@ -126,13 +126,13 @@ class storeToken(graphene.Mutation):
                 raise Exception('User ID not exits!!!!')
         else:
             return storeToken(token=None,msg="Invalid Credentials")
-        # return storeToken(token=token_obj)
 
 class UpdatePost(graphene.Mutation):
     class Arguments:
         post_data=PostInput(required=True)
     
     post=graphene.Field(PostType)
+    msg=graphene.String()
 
     @staticmethod
     @authenticate_role
@@ -145,28 +145,30 @@ class UpdatePost(graphene.Mutation):
             post_obj.body = post_data.body
             post_obj.header_image = post_data.header_image
             post_obj.save()
-            
-            return UpdatePost(post=post_obj)
-        return UpdatePost(post=None)
+            msg="Blog Updated Succefully"
+            return UpdatePost(post=post_obj,msg=msg)
+        msg="opps!! Something went Wrong!!!!"
+        return UpdatePost(post=None,msg=msg)
 
 class DeletePost(graphene.Mutation):
     class Arguments:
        id=graphene.ID()
-    post=graphene.Field(PostType)
+    msg=graphene.String()
 
     @staticmethod
     @authenticate_role
     def mutate(root,info,id):
         post_obj=Post.objects.get(pk=id)
         post_obj.delete()
-           
-        return None
+        msg="Blog Deleted Succefully"
+        return DeletePost(msg=msg)
 
 class CreateComments(graphene.Mutation):
     class Arguments:
         comments_data=CommentsInput(required=True)
 
     comments=graphene.Field(CommentsType)
+    msg=graphene.String()
     @authenticate_role
     def mutate(root,info,comments_data=None):
         comments=Comments(post=Post.objects.get(id=comments_data.post),
@@ -174,18 +176,21 @@ class CreateComments(graphene.Mutation):
         body=comments_data.body,
         )
         comments.save()
-        return CreateComments(comments=comments)
+        msg="Thank You For your comment"
+        return CreateComments(comments=comments,msg=msg)
 class DeleteComments(graphene.Mutation):
     class Arguments:
         id=graphene.ID()
-    comments=graphene.Field(CommentsType)
+    msg=graphene.String()
 
     @staticmethod
     @authenticate_role
     def mutate(root,info,id):
         comment_obj=Comments.objects.get(pk=id)
         comment_obj.delete()
-        return None
+        msg="Comment deleted Succefully"
+        return DeleteComments(msg=msg)
+
 class Logout(graphene.Mutation):
     class Arguments:
         id=graphene.ID()
@@ -196,26 +201,14 @@ class Logout(graphene.Mutation):
         obj=AccessToken.objects.get(user_id=id)
         obj.delete()
         msg='succfully logout'
-           
         return Logout(msg=msg)
-
-
-
-
-        # auth_header = info.context.META.get('HTTP_AUTHORIZATION')
-        # if auth_header is None:
-        #     raise Exception('auth Token not providedd')
-        # else:
-        #     new_token=auth_header.replace("JWT","").replace(" ","")
-        # if AccessToken.objects.filter(token_id=new_token).exists():
-        #     return Post.objects.all()
-        # raise Exception('auth Token not providedd')
 
 class CreateLikes(graphene.Mutation):
     class Arguments:
         post_id=graphene.ID(required=True)
         user_id=graphene.ID(required=True)
     like=graphene.Field(PostType)
+    msg=graphene.String()
 
     @staticmethod
     @authenticate_role
@@ -224,9 +217,12 @@ class CreateLikes(graphene.Mutation):
         user_obj=get_user_model().objects.get(id=user_id)
         if post.likes.filter(id=user_obj.id).exists():
             post.likes.remove(user_obj)
+            msg="Like Removed Succefully "
+
         else:
             post.likes.add(user_obj)
-        return CreateLikes(like=post)
+            msg="Liked Succefully"
+        return CreateLikes(like=post,msg=msg)
 
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
@@ -264,8 +260,6 @@ class Mutation(graphene.ObjectType):
     revoke_token = graphql_jwt.Revoke.Field()
     store_token=storeToken.Field()
     logout=Logout.Field()
-    # delete_token_cookie = graphql_jwt.DeleteJSONWebTokenCookie.Field()
-    # delete_refresh_token_cookie = graphql_jwt.DeleteRefreshTokenCookie.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
