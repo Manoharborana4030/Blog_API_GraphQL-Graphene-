@@ -1,3 +1,4 @@
+
 from .models import Post,Comments,AccessToken
 from django.contrib.auth import get_user_model,authenticate
 import graphene
@@ -48,7 +49,7 @@ class CommentsType(DjangoObjectType):
 class TokenType(DjangoObjectType):
     class Meta:
         model=AccessToken
-        fields=['token_id']
+        fields=['token_id','user']
 
 class CommentsInput(graphene.InputObjectType):
     id=graphene.ID()
@@ -115,7 +116,7 @@ class storeToken(graphene.Mutation):
                 if AccessToken.objects.filter(user_id=user_obj.id).exists():
                     token_obj=AccessToken.objects.get(user_id=user_obj.id)
                     print(token_obj,"@@@@@@@@@@@@@@@@@@@@@@@@")
-                    return storeToken(token=token_obj)
+                    return storeToken(token=token_obj,)
                 else:
                     user = get_user_model().objects.get(id=user_obj.id)
                     token = get_token(user)
