@@ -210,6 +210,7 @@ class CreateLikes(graphene.Mutation):
         user_id=graphene.ID(required=True)
     like=graphene.Field(PostType)
     msg=graphene.String()
+    liked=graphene.Boolean()
 
     @staticmethod
     @authenticate_role
@@ -219,11 +220,13 @@ class CreateLikes(graphene.Mutation):
         if post.likes.filter(id=user_obj.id).exists():
             post.likes.remove(user_obj)
             msg="Like Removed Succefully "
+            liked=False
 
         else:
             post.likes.add(user_obj)
             msg="Liked Succefully"
-        return CreateLikes(like=post,msg=msg)
+            liked=True
+        return CreateLikes(like=post,msg=msg,liked=liked)
 
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
@@ -233,8 +236,6 @@ class Query(graphene.ObjectType):
     @authenticate_role
     def resolve_users(self, info):
         return get_user_model().objects.all()
-
-
 
     @authenticate_role
     def resolve_all_post(self,info,**kwargs): 
